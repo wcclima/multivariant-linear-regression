@@ -20,8 +20,10 @@ def pseudoinverse(M):
         of M.
         """
         U, s, Vt = np.linalg.svd(M, full_matrices=True)
+        machine_precision = np.finfo(float).eps
         Sigma_plus = np.zeros(M.shape).T
-        Sigma_plus[:s.shape[0], :s.shape[0]] = np.diag(1 / s)
+        s_inv = (1/s)*(s > machine_precision)
+        Sigma_plus[:s.shape[0], :s.shape[0]] = np.diag(s_inv)
         M_pinv = np.matmul(
             Vt.T, 
             np.matmul(Sigma_plus, U.T)

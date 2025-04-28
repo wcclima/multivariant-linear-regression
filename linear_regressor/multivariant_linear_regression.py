@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import stdtr, stdtrit
+from scipy.stats import f
 from prettytable import PrettyTable
 
 def check_same_number_of_rows(array1: np.ndarray, array2: np.ndarray):
@@ -172,15 +173,16 @@ class LinearRegressor(object):
 
     def score(self, X, y, sample_weight = None):
         """
-        Returns the coefficient of determination R^2 and the F-statistic.
+        Returns the residual standard error, the coefficient of 
+        determination R^2, the F-statistic and the p-value. The last
+        two quantities are related to the test of the hypothesis that
+        all the predictors's coefficients are zero versus the
+        alternative that at least one of the coefficients is non-zero.
+
         Given the residual sum of squres (RSS) (y - y_pred)**2.sum and
         the total sum of squares (TSS) (y - y.mean)**2.sum, the 
         coefficient of determination is 1 - RSS/TSS. The F-statistic
-        is f*(TSS - RSS)/RSS, and the numerical factor f is given in
-        terms of the diagonal sample weight matrix W and the predictors
-        X as f = (tr(W)^2 - tr(W)*tr(Q))/(tr(W)*tr(Q) - tr(W^2)), where
-        the matrix Q = (X^TWX)^{-1}X^TW^2X. In the case W is the identity
-        matrix, f = (n_smaples - n_predictors - 1)/n_predictors
+        is (n_samples - n_predictors - 1)/n_predictors*(TSS - RSS)/RSS.
 
         Keyword arguments:
             X (array-like): array of shape (n_samples, n_predictors).
@@ -195,14 +197,11 @@ class LinearRegressor(object):
 
         check_same_number_of_rows(X, y)
 
-        n_samples = y.shape[0]
+        n_samples, n_predictors = X.shape
         W = self.weight_matrix(n_samples, sample_weight)
-        W_sqrt = np.sqrt(W)
         b_ = np.append(self.intercept_, self.coef_) 
         
         X_ = np.concatenate((np.ones((n_samples, 1)),X), axis=1)
-        X_tilde = np.matmul(W_sqrt, X_)
-        X_tilde_pinv = pseudoinverse(X_tilde)
     
         y_pred = np.matmul(X_, b_)
 
@@ -210,16 +209,18 @@ class LinearRegressor(object):
         y_bar = np.sum(np.matmul(W, y))/np.trace(W)
         tot_sum_sqrs = np.matmul((y - y_bar).T, np.matmul(W, y - y_bar))
 
-        a = np.trace(W) - np.trace(np.matmul(X_tilde_pinv, np.matmul(W, X_tilde)))
-        b = np.trace(np.matmul(X_tilde_pinv, np.matmul(W, X_tilde))) - np.trace(W**2)/np.trace(W)
-        factor = a/b
+        f_stats = (n_samples - n_predictors - 1)/n_predictors*(tot_sum_sqrs - res_sum_sqrs)/res_sum_sqrs
 
-        f_stats = factor*(tot_sum_sqrs - res_sum_sqrs)/res_sum_sqrs
+        p_value = 2.*min(
+            f.cdf(f_stats, n_predictors, n_samples - n_predictors - 1), 
+            f.sf(f_stats, n_predictors, n_samples - n_predictors - 1)
+            )
 
         score_table = PrettyTable(["quantity", "value"])
-        score_table.add_row(["residual std. error", np.round(np.sqrt(res_sum_sqrs/a), 4)])
+        score_table.add_row(["residual std. error", np.round(np.sqrt(res_sum_sqrs/(n_samples - n_predictors - 1)), 4)])
         score_table.add_row(["R^2", np.round(1. - res_sum_sqrs/tot_sum_sqrs, 4)])
         score_table.add_row(["F-statistic", np.round(f_stats, 4)])
+        score_table.add_row(["p-value", np.round(p_value, 4)])
 
         return print(score_table)
 
@@ -260,31 +261,29 @@ class LinearRegressor(object):
 
         check_same_number_of_rows(X, y)
 
-        n_samples = y.shape[0]
+        n_samples, n_predictors = X.shape
+        df = n_samples - n_predictors - 1
         W = self.weight_matrix(n_samples, sample_weight)
         W_sqrt = np.sqrt(W)
         
         if self.fit_intercept:
             X_tilde = np.matmul(
                 W_sqrt, 
-                np.concatenate((np.ones((X.shape[0], 1)),X), axis=1)
+                np.concatenate((np.ones((n_samples, 1)),X), axis=1)
             )
             b_ = np.append(self.intercept_, self.coef_)
         else:
             X_tilde = np.matmul(W_sqrt, X)
             b_ = self.coef_[:]
 
-        n_predictors = X_tilde.shape[1]
         y_tilde = np.matmul(W_sqrt, y)
 
         X_tilde_pinv = pseudoinverse(X_tilde)
-        Q = np.matmul(X_tilde.T, X_tilde) 
-        M = np.matmul(X_tilde_pinv, np.matmul(W, X_tilde))
+        Q = np.matmul(X_tilde.T, X_tilde)
         res_sum_sqrd = np.matmul(y_tilde.T, y_tilde) - np.matmul(b_.T, np.matmul(Q, b_))
-        variance_hat = res_sum_sqrd/(np.trace(W) - np.trace(M))
+        variance_hat = res_sum_sqrd/df
         
         conf_level = 0.95
-        df = n_samples - n_predictors
         pth_quant_t = np.abs(stdtrit(df, 0.5*(1. - conf_level)))
 
         res_std_error = np.sqrt(variance_hat*np.diag(np.matmul(X_tilde_pinv, np.matmul(W, X_tilde_pinv.T))))

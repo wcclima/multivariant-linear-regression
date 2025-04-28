@@ -77,3 +77,4 @@ The method `regression_report` returns a report on the statistical analysis for 
 - [G. Loiola Silva, *Notas de Probabilidade e Estatística* (2024)](https://www.math.tecnico.ulisboa.pt/~gsilva/PE_slides-print.pdf).
 - [K. Silva Conceição, *Estatística I*](https://sites.icmc.usp.br/frasson/Estat/material/Estatistica-I-Katiane.pdf).
 - G. James, D. Witten, T. Hastie and R. Tibshirani, *An Introduction to Statistical Learning*, Springer (2017).
+- M.N. Magalhães and A.C. Pedroso de Lima, *Noções de Probabilidade e Estatística*, Edusp (2023).

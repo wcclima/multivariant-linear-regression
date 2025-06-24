@@ -299,17 +299,28 @@ class LinearRegressor(object):
                  f"{p_value[0]:.4f}"
                 ]
             )
+
+            for i, (coef, res, p) in enumerate(zip(self.coef_, res_std_error[1:], p_value[1:])):
+                report_table.add_row(
+                    [f"coef_{i + 1}", 
+                    f"{coef:.4f}", 
+                    f"[{coef - pth_quant_t*res:.4f}, {coef + pth_quant_t*res:.4f}]", 
+                    f"{res:.4f}", 
+                    f"{p:.4f}"
+                    ]
+                )
+            
         else:
             report_table.add_row([f"intercept", 0., "----", "----", "----"])
 
-        for i, (coef, res, p) in enumerate(zip(self.coef_, res_std_error[1:], p_value[1:])):
-            report_table.add_row(
-                [f"coef_{i + 1}", 
-                 f"{coef:.4f}", 
-                 f"[{coef - pth_quant_t*res:.4f}, {coef + pth_quant_t*res:.4f}]", 
-                 f"{res:.4f}", 
-                 f"{p:.4f}"
-                ]
-            )
+            for i, (coef, res, p) in enumerate(zip(self.coef_, res_std_error, p_value)):
+                report_table.add_row(
+                    [f"coef_{i + 1}", 
+                    f"{coef:.4f}", 
+                    f"[{coef - pth_quant_t*res:.4f}, {coef + pth_quant_t*res:.4f}]", 
+                    f"{res:.4f}", 
+                    f"{p:.4f}"
+                    ]
+                )
             
         return print(report_table)

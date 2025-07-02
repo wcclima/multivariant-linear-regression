@@ -6,7 +6,7 @@ The aim of this project provide a Python-based implementation of the ordinary le
 
 ## 2 - Repo organisation
 **`linear_regression/`: The linear regression modules**
-It contains the multivariant linear regression module. See also Module architecture below.
+- It contains the multivariant linear regression module. See also Module architecture below.
 
 **`notebooks/:` Notebooks demonstrating the modules**
 - `LinearRegression.ipynb`: Notebook discussing the basics of linear regression 
